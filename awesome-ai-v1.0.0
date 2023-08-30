@@ -11,7 +11,7 @@ echo "$PODS" | while IFS= read -r POD; do
     export EVENTS=$(kubectl --namespace $NAMESPACE get event \
         --field-selector involvedObject.name=$POD)
 
-    export MESSAGE="explain what's wrong with a Kubernetes pod that contains following events: $EVENTS"
+    export MESSAGE="Explain what's wrong with a Kubernetes pod that contains following events: $EVENTS"
 
     export MESSAGE=$(echo $MESSAGE | tr '\n' ' ' | tr '"' ' ')
 
@@ -24,6 +24,6 @@ echo "$PODS" | while IFS= read -r POD; do
         -H "Authorization: Bearer $OPENAI_KEY" \
         -d @question.json | jq ".choices[0].message.content")
     
-    echo "Here you go:\n\n\n$RESPONSE"
+    echo "The problems with the Pod $POD can be explained and solved with the following:\n\n\n$RESPONSE"
 
 done
