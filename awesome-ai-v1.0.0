@@ -1,0 +1,29 @@
+#!/bin/sh
+
+export NAMESPACE=$1
+
+export PODS=$(kubectl --namespace $NAMESPACE get pods \
+    --field-selector="status.phase!=Succeeded,status.phase!=Running" \
+    --output custom-columns="POD:metadata.name" --no-headers)
+
+echo "$PODS" | while IFS= read -r POD; do
+
+    export EVENTS=$(kubectl --namespace $NAMESPACE get event \
+        --field-selector involvedObject.name=$POD)
+
+    export MESSAGE="explain what's wrong with a Kubernetes pod that contains following events: $EVENTS"
+
+    export MESSAGE=$(echo $MESSAGE | tr '\n' ' ' | tr '"' ' ')
+
+    cat question-template.json \
+        | jq ".messages[0].content = \"$MESSAGE\"" \
+        > question.json
+
+    export RESPONSE=$(curl https://api.openai.com/v1/chat/completions \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $OPENAI_KEY" \
+        -d @question.json | jq ".choices[0].message.content")
+    
+    echo "Here you go:\n\n\n$RESPONSE"
+
+done
